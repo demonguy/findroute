@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import os
 import sys
 
 def load_nav(file):
@@ -76,10 +76,10 @@ def find_wp(fixes, key_points):
 
 
 
-r = load_route("C:\Users\cy_ss\Desktop\\123\\1")
+r = load_route(os.path.join(os.path.dirname(__file__), "track"))
 kp = find_key_point(r)
 
-fixes = load_nav("C:\Users\cy_ss\Desktop\\123\earth_fix.dat")
+fixes = load_nav(os.path.join(os.path.dirname(__file__), "earth_fix.dat"))
 
 wps = find_wp(fixes, kp)
 
