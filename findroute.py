@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
+import json
 
 def load_nav(file):
 	data = []
@@ -23,7 +24,7 @@ def load_nav(file):
 			data.append(fix)
 	return data
 
-def load_route(file):
+def load_route_raw(file):
 	data = []
 	with open(file) as f:
 		for line in f:
@@ -32,6 +33,23 @@ def load_route(file):
 			fix["lat"] = float(l[2])
 			fix["long"] = float(l[3])
 			fix["orient"] = int(l[5][:-2])
+			fix["height"] = int(l[8].replace(',', ''))
+			# fix["name"] = l[2]
+			# fix["type"] = l[3]
+			# fix["region"] = l[4]
+			data.append(fix)
+			# print(fix["orient"])
+	return data
+
+def load_route(json_file):
+	data = []
+	with open(json_file) as f:
+		r = json.load(f)
+		for d in r:
+			fix = {}
+			fix["lat"] = float(d["latitude"])
+			fix["long"] = float(d["longitude"])
+			fix["height"] = float(d["height"])
 			# fix["name"] = l[2]
 			# fix["type"] = l[3]
 			# fix["region"] = l[4]
@@ -48,7 +66,8 @@ def find_key_point(route):
 			
 		last_orient = p["orient"]
 
-	return data
+	# return data
+	return route
 
 def distance(a, b):
 	return ((a["lat"] - b["lat"])*(a["lat"] - b["lat"])) + ((a["long"] - b["long"])*(a["long"] - b["long"]))
@@ -59,10 +78,12 @@ def find_nearest(fixes, point):
 	wp = 0
 	for fix in fixes:
 		d = distance(fix, point)
-		if d < dis:
+		if d < dis and ((point["height"] >= 5000 and fix["type"] == "ENRT") or point["height"] < 5000):
 			dis = d
 			wp = fix
 
+	wp["error"] = dis
+	wp["height"] = point["height"]
 	return wp
 
 
@@ -76,12 +97,18 @@ def find_wp(fixes, key_points):
 
 
 
-r = load_route(os.path.join(os.path.dirname(__file__), "track"))
-kp = find_key_point(r)
+r = load_route(os.path.join(os.path.dirname(__file__), "track.json"))
+# kp = find_key_point(r)
 
 fixes = load_nav(os.path.join(os.path.dirname(__file__), "earth_fix.dat"))
 
-wps = find_wp(fixes, kp)
+wps = find_wp(fixes, r)
 
+last = None
 for wp in wps:
-	print(wp)
+	if (last and last["name"] == wp["name"]) or wp["error"] > 0.05:
+		pass
+	else:
+		print(wp["name"], wp["type"], wp["height"], float("{:.2f}".format(wp["error"])))
+
+	last = wp
