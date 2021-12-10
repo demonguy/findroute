@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+import sys
 
 def load_nav(file):
 	data = []
@@ -70,7 +71,12 @@ def find_key_point(route):
 	return route
 
 def distance(a, b):
-	return ((a["lat"] - b["lat"])*(a["lat"] - b["lat"])) + ((a["long"] - b["long"])*(a["long"] - b["long"]))
+	x = abs(a["lat"] - b["lat"])
+	y = abs(a["long"] - b["long"])
+	if x < 0.5 and y < 0.5:
+		return x*x + y*y
+	else:
+		return 10000
 
 
 def find_nearest(fixes, point):
@@ -78,7 +84,7 @@ def find_nearest(fixes, point):
 	wp = 0
 	for fix in fixes:
 		d = distance(fix, point)
-		if d < dis and ((point["height"] >= 5000 and fix["type"] == "ENRT") or point["height"] < 5000):
+		if d < dis and ((point["height"] >= 5000 and fix["type"] == "ENRT") or (point["height"] < 5000 and (fix["type"] == sys.argv[1] or fix["type"] == sys.argv[2] or fix["type"] == "ENRT"))):
 			dis = d
 			wp = fix
 
@@ -96,6 +102,7 @@ def find_wp(fixes, key_points):
 	return wps
 
 
+print(sys.argv[1], sys.argv[2])
 
 r = load_route(os.path.join(os.path.dirname(__file__), "track.json"))
 # kp = find_key_point(r)
@@ -106,7 +113,7 @@ wps = find_wp(fixes, r)
 
 last = None
 for wp in wps:
-	if (last and last["name"] == wp["name"]) or wp["error"] > 0.05:
+	if (last and last["name"] == wp["name"]) or wp["error"] > 0.5:
 		pass
 	else:
 		print(wp["name"], wp["type"], wp["height"], float("{:.2f}".format(wp["error"])))
